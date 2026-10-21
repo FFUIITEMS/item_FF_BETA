@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visor de Caché del Navegador Mejorado</title>
+    <meta name="description" content="Análisis y gestión integral de la caché del navegador. Visualiza, filtra, exporta y limpia los recursos almacenados en Cache Storage.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 'mono': ['IBM Plex Mono', 'monospace'] },
+                    borderRadius: { 'custom': '11px' },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'pulse-slow': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideUp: {
+                            '0%': { transform: 'translateY(10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-black text-white font-mono min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <div class="bg-gradient-to-b from-gray-900 to-black border border-gray-800 rounded-custom shadow-2xl overflow-hidden mb-8">
+            <div class="bg-gradient-to-r from-gray-800 via-gray-900 to-gray-800 border-b border-gray-700 text-white p-6 md:p-8">
+                <h1 class="text-3xl md:text-4xl font-bold mb-3 text-center">🗄️ Visor de Caché Mejorado</h1>
+                <p class="text-base md:text-xl opacity-80 text-center text-gray-300">Análisis y gestión integral de la caché del navegador</p>
+            </div>
+            
+            <!-- Controles -->
+            <div class="p-6 bg-gray-900 border-b border-gray-800">
+                <div class="flex flex-wrap gap-4 justify-center items-center">
+                    <button type="button" id="refreshBtn" class="px-6 py-3 bg-green-600 hover:bg-green-500 active:bg-green-700 text-white font-semibold rounded-custom border border-green-500 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex items-center gap-2" aria-label="Actualizar datos de caché">
+                        <span>🔄</span> Actualizar Caché
+                    </button>
+                    <button type="button" id="clearAllBtn" class="px-6 py-3 bg-red-600 hover:bg-red-500 active:bg-red-700 text-white font-semibold rounded-custom border border-red-500 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex items-center gap-2" aria-label="Borrar todas las cachés">
+                        <span>🗑️</span> Borrar Todas
+                    </button>
+                    <button type="button" id="exportBtn" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-semibold rounded-custom border border-blue-500 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex items-center gap-2" aria-label="Exportar informe">
+                        <span>📊</span> Exportar Informe
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Dashboard de Estadísticas -->
+            <div class="p-6 bg-gray-900">
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4" id="statsContainer">
+                    <div class="bg-gray-800 border border-gray-700 text-white p-4 rounded-custom text-center hover:border-gray-600 transition-colors">
+                        <div class="text-2xl font-bold" id="totalCaches">0</div>
+                        <div class="text-sm opacity-80 text-gray-300">Cachés Totales</div>
+                    </div>
+                    <div class="bg-gray-800 border border-gray-700 text-white p-4 rounded-custom text-center hover:border-gray-600 transition-colors">
+                        <div class="text-2xl font-bold text-green-400" id="totalResources">0</div>
+                        <div class="text-sm opacity-80 text-gray-300">Recursos</div>
+                    </div>
+                    <div class="bg-gray-800 border border-gray-700 text-white p-4 rounded-custom text-center hover:border-gray-600 transition-colors">
+                        <div class="text-2xl font-bold text-purple-400" id="totalSize">0 B</div>
+                        <div class="text-sm opacity-80 text-gray-300">Tamaño Total</div>
+                    </div>
+                    <div class="bg-gray-800 border border-gray-700 text-white p-4 rounded-custom text-center hover:border-gray-600 transition-colors">
+                        <div class="text-2xl font-bold text-orange-400" id="imageCount">0</div>
+                        <div class="text-sm opacity-80 text-gray-300">Imágenes</div>
+                    </div>
+                    <div class="bg-gray-800 border border-gray-700 text-white p-4 rounded-custom text-center hover:border-gray-600 transition-colors">
+                        <div class="text-2xl font-bold text-yellow-400" id="jsCount">0</div>
+                        <div class="text-sm opacity-80 text-gray-300">JavaScript</div>
+                    </div>
+                    <div class="bg-gray-800 border border-gray-700 text-white p-4 rounded-custom text-center hover:border-gray-600 transition-colors">
+                        <div class="text-2xl font-bold text-blue-400" id="cssCount">0</div>
+                        <div class="text-sm opacity-80 text-gray-300">Archivos CSS</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Controles de Filtros -->
+        <div class="bg-gray-900 border border-gray-800 rounded-custom p-6 mb-6">
+            <div class="flex flex-wrap gap-4 items-center justify-between">
+                <div class="flex flex-wrap gap-2" role="group" aria-label="Filtros por tipo de recurso">
+                    <button type="button" class="filter-btn px-4 py-2 bg-white text-black border border-white rounded-custom transition-all duration-200 font-semibold" data-filter="all">Todos</button>
+                    <button type="button" class="filter-btn px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 rounded-custom transition-all duration-200" data-filter="image">🖼️ Imágenes</button>
+                    <button type="button" class="filter-btn px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 rounded-custom transition-all duration-200" data-filter="javascript">📜 JavaScript</button>
+                    <button type="button" class="filter-btn px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 rounded-custom transition-all duration-200" data-filter="css">🎨 CSS</button>
+                    <button type="button" class="filter-btn px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 rounded-custom transition-all duration-200" data-filter="html">📄 HTML</button>
+                    <button type="button" class="filter-btn px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 rounded-custom transition-all duration-200" data-filter="font">🔤 Fuentes</button>
+                </div>
+                <div class="flex items-center gap-2 w-full md:w-auto">
+                    <input type="text" id="searchInput" placeholder="Buscar entradas de caché..." class="w-full md:w-80 px-4 py-2 bg-gray-800 border border-gray-700 text-white rounded-custom focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent placeholder-gray-400" aria-label="Buscar entradas de caché">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Estado de Carga -->
+        <div id="loadingState" class="bg-gray-900 border border-gray-800 rounded-custom p-12 text-center">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
+            <p class="text-gray-300 text-lg">Cargando datos de caché...</p>
+        </div>
+        
+        <!-- Lista de Cachés -->
+        <div id="cacheList" class="space-y-6"></div>
+        
+        <!-- Estado Vacío -->
+        <div id="emptyState" class="hidden bg-gray-900 border border-gray-800 rounded-custom p-12 text-center">
+            <div class="text-6xl mb-4">🗄️</div>
+            <h3 class="text-xl font-semibold text-white mb-2">No se encontraron cachés</h3>
+            <p class="text-gray-400">No hay datos de caché disponibles en esta sesión del navegador.</p>
+        </div>
+    </div>
+
+    <script>
+        class CacheViewer {
+            constructor() {
+                this.cacheData = [];
+                this.filteredData = [];
+                this.currentFilter = 'all';
+                this.searchTerm = '';
+                this.init();
+            }
+
+            init() {
+                this.bindEvents();
+                this.loadCacheData();
+            }
+
+            bindEvents() {
+                document.getElementById('refreshBtn').addEventListener('click', () => this.loadCacheData());
+                document.getElementById('clearAllBtn').addEventListener('click', () => this.clearAllCaches());
+                document.getElementById('exportBtn').addEventListener('click', () => this.exportReport());
+                document.getElementById('searchInput').addEventListener('input', (e) => this.handleSearch(e.target.value));
+                
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => this.handleFilter(e.currentTarget.dataset.filter));
+                });
+            }
+
+            async loadCacheData() {
+                this.showLoading();
+                
+                try {
+                    if (!('caches' in window)) {
+                        this.showError('La API Cache Storage no está disponible en este navegador.');
+                        return;
+                    }
+
+                    const cacheNames = await caches.keys();
+                    this.cacheData = [];
+                    
+                    if (cacheNames.length === 0) {
+                        this.updateStatistics();
+                        this.showEmptyState();
+                        return;
+                    }
+
+                    for (const cacheName of cacheNames) {
+                        const cache = await caches.open(cacheName);
+                        const requests = await cache.keys();
+                        const resources = [];
+
+                        for (const request of requests) {
+                            try {
+                                const response = await cache.match(request);
+                                if (response) {
+                                    const blob = await response.blob();
+                                    const headers = {};
+                                    response.headers.forEach((value, key) => {
+                                        headers[key] = value;
+                                    });
+
+                                    const resource = {
+                                        url: request.url,
+                                        method: request.method,
+                                        size: blob.size,
+                                        type: this.getResourceType(request.url, headers['content-type']),
+                                        mimeType: headers['content-type'] || 'unknown',
+                                        lastModified: headers['last-modified'],
+                                        etag: headers['etag'],
+                                        cacheControl: headers['cache-control'],
+                                        expires: headers['expires'],
+                                        status: response.status,
+                                        statusText: response.statusText,
+                                        timestamp: new Date().toISOString()
+                                    };
+                                    resources.push(resource);
+                                }
+                            } catch (error) {
+                                console.warn('Error al procesar recurso en caché:', error);
+                            }
+                        }
+
+                        this.cacheData.push({
+                            name: cacheName,
+                            resources: resources,
+                            totalSize: resources.reduce((sum, r) => sum + r.size, 0),
+                            resourceCount: resources.length
+                        });
+                    }
+
+                    this.updateStatistics();
+                    this.applyFilters();
+                    this.hideLoading();
+
+                } catch (error) {
+                    console.error('Error al cargar datos de caché:', error);
+                    this.showError(error.message);
+                }
+            }
+
+            getResourceType(url, mimeType) {
+                if (mimeType) {
+                    if (mimeType.startsWith('image/')) return 'image';
+                    if (mimeType.startsWith('text/css')) return 'css';
+                    if (mimeType.startsWith('text/html')) return 'html';
+                    if (mimeType.startsWith('application/javascript') || mimeType.startsWith('text/javascript')) return 'javascript';
+                    if (mimeType.startsWith('font/') || mimeType.includes('font')) return 'font';
+                    if (mimeType.startsWith('audio/')) return 'audio';
+                    if (mimeType.startsWith('video/')) return 'video';
+                }
+
+                // ✅ BUG CORREGIDO: quitar query string y hash antes de comprobar extensión
+                const cleanUrl = url.split('?')[0].split('#')[0];
+                const lastSegment = cleanUrl.split('/').pop() || '';
+                const dotIndex = lastSegment.lastIndexOf('.');
+                if (dotIndex === -1) return 'other';
+                const extension = lastSegment.substring(dotIndex + 1).toLowerCase();
+
+                const typeMap = {
+                    'js': 'javascript', 'mjs': 'javascript', 'css': 'css',
+                    'html': 'html', 'htm': 'html',
+                    'png': 'image', 'jpg': 'image', 'jpeg': 'image', 'gif': 'image',
+                    'svg': 'image', 'webp': 'image', 'avif': 'image', 'ico': 'image',
+                    'woff': 'font', 'woff2': 'font', 'ttf': 'font', 'otf': 'font',
+                    'mp3': 'audio', 'wav': 'audio', 'ogg': 'audio',
+                    'mp4': 'video', 'webm': 'video',
+                    'json': 'data', 'xml': 'data'
+                };
+
+                return typeMap[extension] || 'other';
+            }
+
+            handleFilter(filter) {
+                if (!filter) return;
+                this.currentFilter = filter;
+
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.classList.remove('bg-white', 'text-black', 'border-white');
+                    btn.classList.add('bg-gray-800', 'text-white', 'border-gray-700');
+                });
+
+                const activeBtn = document.querySelector(`[data-filter="${filter}"]`);
+                if (activeBtn) {
+                    activeBtn.classList.add('bg-white', 'text-black', 'border-white');
+                    activeBtn.classList.remove('bg-gray-800', 'text-white', 'border-gray-700');
+                }
+
+                this.applyFilters();
+            }
+
+            handleSearch(term) {
+                this.searchTerm = (term || '').toLowerCase().trim();
+                this.applyFilters();
+            }
+
+            applyFilters() {
+                this.filteredData = this.cacheData.map(cache => {
+                    let filteredResources = cache.resources;
+
+                    if (this.currentFilter !== 'all') {
+                        filteredResources = filteredResources.filter(resource =>
+                            resource.type === this.currentFilter
+                        );
+                    }
+
+                    if (this.searchTerm) {
+                        filteredResources = filteredResources.filter(resource =>
+                            resource.url.toLowerCase().includes(this.searchTerm) ||
+                            resource.type.toLowerCase().includes(this.searchTerm) ||
+                            resource.mimeType.toLowerCase().includes(this.searchTerm)
+                        );
+                    }
+
+                    return {
+                        ...cache,
+                        resources: filteredResources,
+                        filteredSize: filteredResources.reduce((sum, r) => sum + r.size, 0),
+                        filteredCount: filteredResources.length
+                    };
+                }).filter(cache => cache.resources.length > 0);
+
+                this.renderCacheList();
+            }
+
+            updateStatistics() {
+                const stats = {
+                    totalCaches: this.cacheData.length,
+                    totalResources: 0,
+                    totalSize: 0,
+                    imageCount: 0,
+                    jsCount: 0,
+                    cssCount: 0
+                };
+
+                this.cacheData.forEach(cache => {
+                    stats.totalResources += cache.resources.length;
+                    stats.totalSize += cache.totalSize;
+                    
+                    cache.resources.forEach(resource => {
+                        switch (resource.type) {
+                            case 'image': stats.imageCount++; break;
+                            case 'javascript': stats.jsCount++; break;
+                            case 'css': stats.cssCount++; break;
+                        }
+                    });
+                });
+
+                document.getElementById('totalCaches').textContent = stats.totalCaches;
+                document.getElementById('totalResources').textContent = stats.totalResources;
+                document.getElementById('totalSize').textContent = this.formatBytes(stats.totalSize);
+                document.getElementById('imageCount').textContent = stats.imageCount;
+                document.getElementById('jsCount').textContent = stats.jsCount;
+                document.getElementById('cssCount').textContent = stats.cssCount;
+            }
+
+            renderCacheList() {
+                document.getElementById('emptyState').classList.add('hidden');
+                const container = document.getElementById('cacheList');
+                container.innerHTML = '';
+
+                if (this.filteredData.length === 0) {
+                    this.showEmptyState();
+                    return;
+                }
+
+                this.filteredData.forEach((cache, index) => {
+                    const cacheElement = this.createCacheElement(cache, index);
+                    container.appendChild(cacheElement);
+                });
+            }
+
+            createCacheElement(cache, index) {
+                const div = document.createElement('div');
+                div.className = 'bg-gray-900 border border-gray-800 rounded-custom overflow-hidden animate-slide-up';
+                div.style.animationDelay = `${index * 0.1}s`;
+
+                const typeStats = this.getTypeStatistics(cache.resources);
+                const typeStatsHtml = Object.entries(typeStats).map(([type, count]) => {
+                    const icons = {
+                        image: '🖼️', javascript: '📜', css: '🎨', html: '📄',
+                        font: '🔤', audio: '🎵', video: '🎬', data: '📊', other: '📁'
+                    };
+                    return `<span class="inline-flex items-center gap-1 px-2 py-1 bg-gray-800 border border-gray-700 rounded-custom text-xs text-white">${icons[type] || '📁'} ${count}</span>`;
+                }).join('');
+
+                // ✅ BUG CORREGIDO: antes era `||` (0 se evaluaba falsy). Ahora `??` solo cae si es null/undefined.
+                const displayCount = cache.filteredCount ?? cache.resourceCount;
+                const displaySize = cache.filteredSize ?? cache.totalSize;
+
+                div.innerHTML = `
+                    <div class="bg-gray-800 border-b border-gray-700 text-white p-6">
+                        <div class="flex justify-between items-start mb-4 flex-wrap gap-3">
+                            <div class="min-w-0 flex-1">
+                                <h3 class="text-xl font-bold mb-2 break-all">${this.escapeHtml(cache.name)}</h3>
+                                <div class="flex flex-wrap gap-2">
+                                    ${typeStatsHtml}
+                                </div>
+                            </div>
+                            <div class="text-right flex-shrink-0">
+                                <div class="text-2xl font-bold text-white">${displayCount}</div>
+                                <div class="text-sm opacity-75 text-gray-300">Recursos</div>
+                                <div class="text-lg font-semibold mt-2 text-gray-200">${this.formatBytes(displaySize)}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                            ${cache.resources.map(resource => this.createResourceElement(resource)).join('')}
+                        </div>
+                    </div>
+                `;
+
+                // Delegación para botón copiar URL
+                div.addEventListener('click', (e) => {
+                    const copyBtn = e.target.closest('.copy-url-btn');
+                    if (copyBtn) {
+                        this.copyToClipboard(copyBtn.dataset.url, copyBtn);
+                    }
+                });
+
+                return div;
+            }
+
+            createResourceElement(resource) {
+                const typeIcons = {
+                    image: '🖼️', javascript: '📜', css: '🎨', html: '📄',
+                    font: '🔤', audio: '🎵', video: '🎬', data: '📊', other: '📁'
+                };
+
+                const typeColors = {
+                    image: 'text-green-400 border-green-400',
+                    javascript: 'text-yellow-400 border-yellow-400',
+                    css: 'text-blue-400 border-blue-400',
+                    html: 'text-orange-400 border-orange-400',
+                    font: 'text-purple-400 border-purple-400',
+                    audio: 'text-pink-400 border-pink-400',
+                    video: 'text-red-400 border-red-400',
+                    data: 'text-cyan-400 border-cyan-400',
+                    other: 'text-gray-400 border-gray-400'
+                };
+
+                // ✅ Validar fecha antes de formatear (evita "Invalid Date")
+                let lastModifiedHtml = '';
+                if (resource.lastModified) {
+                    const d = new Date(resource.lastModified);
+                    if (!isNaN(d.getTime())) {
+                        lastModifiedHtml = `<div>Última modificación: ${d.toLocaleString('es-ES')}</div>`;
+                    }
+                }
+
+                // ✅ Proteger contra statusText undefined
+                const statusBadge = resource.status
+                    ? `<span class="px-2 py-1 bg-gray-700 text-gray-300 text-xs rounded-custom border border-gray-600">${resource.status}${resource.statusText ? ' ' + this.escapeHtml(resource.statusText) : ''}</span>`
+                    : '';
+
+                return `
+                    <div class="border border-gray-700 bg-gray-800 rounded-custom p-4 hover:border-gray-600 transition-all duration-200">
+                        <div class="flex justify-between items-start gap-4 flex-wrap">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-2 flex-wrap">
+                                    <span class="text-lg">${typeIcons[resource.type] || '📁'}</span>
+                                    <span class="px-2 py-1 border ${typeColors[resource.type] || typeColors.other} text-xs rounded-custom font-medium bg-transparent">
+                                        ${this.escapeHtml(resource.type.toUpperCase())}
+                                    </span>
+                                    ${statusBadge}
+                                </div>
+                                <div class="text-sm font-medium text-white truncate mb-1" title="${this.escapeAttr(resource.url)}">
+                                    ${this.escapeHtml(resource.url)}
+                                </div>
+                                <div class="text-xs text-gray-400 space-y-1">
+                                    <div>MIME Type: ${this.escapeHtml(resource.mimeType)}</div>
+                                    <div>Método: ${this.escapeHtml(resource.method)}</div>
+                                    ${lastModifiedHtml}
+                                    ${resource.cacheControl ? `<div>Cache Control: ${this.escapeHtml(resource.cacheControl)}</div>` : ''}
+                                    ${resource.etag ? `<div>ETag: ${this.escapeHtml(resource.etag.substring(0, 20))}...</div>` : ''}
+                                </div>
+                            </div>
+                            <div class="text-right flex-shrink-0 flex flex-col items-end gap-2">
+                                <div class="text-lg font-bold text-white">${this.formatBytes(resource.size)}</div>
+                                <div class="text-xs text-gray-400">${new Date(resource.timestamp).toLocaleTimeString('es-ES')}</div>
+                                <button type="button" class="copy-url-btn px-2 py-1 text-xs bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded transition-colors" data-url="${this.escapeAttr(resource.url)}" aria-label="Copiar URL al portapapeles">📋</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            getTypeStatistics(resources) {
+                const stats = {};
+                resources.forEach(resource => {
+                    stats[resource.type] = (stats[resource.type] || 0) + 1;
+                });
+                return stats;
+            }
+
+            async clearAllCaches() {
+                if (!confirm('⚠️ ¿Seguro que quieres borrar TODAS las cachés?\n\nEsta acción eliminará todos los recursos almacenados y no se puede deshacer.')) {
+                    return;
+                }
+
+                try {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    
+                    this.cacheData = [];
+                    this.filteredData = [];
+                    this.updateStatistics();
+                    this.showSuccessMessage('¡Todas las cachés han sido borradas con éxito!');
+                    await this.loadCacheData();
+                } catch (error) {
+                    console.error('Error al borrar cachés:', error);
+                    this.showErrorMessage('Error al borrar cachés: ' + error.message);
+                }
+            }
+
+            exportReport() {
+                const report = {
+                    timestamp: new Date().toISOString(),
+                    summary: {
+                        totalCaches: this.cacheData.length,
+                        totalResources: this.cacheData.reduce((sum, cache) => sum + cache.resourceCount, 0),
+                        totalSize: this.cacheData.reduce((sum, cache) => sum + cache.totalSize, 0)
+                    },
+                    caches: this.cacheData.map(cache => ({
+                        name: cache.name,
+                        resourceCount: cache.resourceCount,
+                        totalSize: cache.totalSize,
+                        resources: cache.resources.map(resource => ({
+                            url: resource.url,
+                            type: resource.type,
+                            size: resource.size,
+                            mimeType: resource.mimeType,
+                            status: resource.status
+                        }))
+                    }))
+                };
+
+                const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `informe-cache-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                this.showSuccessMessage('¡Informe de caché exportado con éxito!');
+            }
+
+            formatBytes(bytes) {
+                if (!bytes || bytes === 0) return '0 B';
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            escapeHtml(str) {
+                const div = document.createElement('div');
+                div.textContent = String(str ?? '');
+                return div.innerHTML;
+            }
+
+            escapeAttr(str) {
+                return String(str ?? '').replace(/[&<>"']/g, c => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                }[c]));
+            }
+
+            async copyToClipboard(text, btn) {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    const original = btn.textContent;
+                    btn.textContent = '✅';
+                    btn.classList.add('bg-green-800', 'border-green-600');
+                    setTimeout(() => {
+                        btn.textContent = original;
+                        btn.classList.remove('bg-green-800', 'border-green-600');
+                    }, 1500);
+                } catch (err) {
+                    console.error('Error al copiar al portapapeles:', err);
+                    this.showErrorMessage('No se pudo copiar la URL');
+                }
+            }
+
+            showLoading() {
+                document.getElementById('loadingState').classList.remove('hidden');
+                document.getElementById('cacheList').innerHTML = '';
+                document.getElementById('emptyState').classList.add('hidden');
+            }
+
+            hideLoading() {
+                document.getElementById('loadingState').classList.add('hidden');
+            }
+
+            showEmptyState() {
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('cacheList').innerHTML = '';
+
+                const emptyState = document.getElementById('emptyState');
+                const title = emptyState.querySelector('h3');
+                const desc = emptyState.querySelector('p');
+
+                // ✅ Distinguir entre "no hay cachés" y "filtros sin resultados"
+                if (this.cacheData.length > 0) {
+                    title.textContent = 'No se encontraron coincidencias';
+                    desc.textContent = 'Prueba a cambiar el filtro o el término de búsqueda.';
+                } else {
+                    title.textContent = 'No se encontraron cachés';
+                    desc.textContent = 'No hay datos de caché disponibles en esta sesión del navegador.';
+                }
+
+                emptyState.classList.remove('hidden');
+            }
+
+            showSuccessMessage(message) {
+                this.showToast(message, 'success');
+            }
+
+            showErrorMessage(message) {
+                this.showToast(message, 'error');
+            }
+
+            showError(message) {
+                // ✅ BUG CORREGIDO: antes escribía en loadingState pero no lo mostraba si estaba oculto
+                const loadingState = document.getElementById('loadingState');
+                loadingState.classList.remove('hidden');
+                loadingState.innerHTML = `
+                    <div class="text-center">
+                        <div class="text-6xl mb-4">⚠️</div>
+                        <h3 class="text-xl font-semibold text-red-400 mb-2">Error al cargar los datos de caché</h3>
+                        <p class="text-gray-400 break-all">${this.escapeHtml(message)}</p>
+                    </div>
+                `;
+            }
+
+            showToast(message, type) {
+                const toast = document.createElement('div');
+                const bgColor = type === 'success' ? 'bg-green-600 border-green-500' : 'bg-red-600 border-red-500';
+                toast.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-custom border shadow-lg z-50 animate-fade-in font-mono max-w-xs break-words`;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.remove();
+                }, 3000);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new CacheViewer();
+        });
+    </script>
+</body>
+</html>
